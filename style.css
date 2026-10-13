@@ -12,8 +12,19 @@ body {
   padding: 2rem 1rem;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
 .container {
-  max-width: 600px;
+  max-width: 620px;
   margin: 0 auto;
   background-color: #ffffff;
   border-radius: 12px;
@@ -23,6 +34,11 @@ body {
 }
 
 .app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 1.25rem;
 }
 
@@ -31,15 +47,63 @@ body {
   font-weight: 700;
   color: #0f172a;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.badge-version {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.network-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.network-select {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+  font-family: inherit;
+  color: #334155;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+}
+
+.network-select:focus {
+  border-color: #3b82f6;
+}
+
+.btn-reload {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-reload:hover {
+  background-color: #e2e8f0;
 }
 
 .task-form {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .form-row {
@@ -93,11 +157,26 @@ body {
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
-.btn-submit:hover {
+.btn-submit:hover:not(:disabled) {
   background-color: #1e293b;
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.search-row {
+  margin-bottom: 0.85rem;
+}
+
+.input-search {
+  padding: 0.5rem 0.85rem;
+  font-size: 0.88rem;
+  background-color: #f8fafc;
 }
 
 .error-msg {
@@ -105,7 +184,7 @@ body {
   color: #dc2626;
   background-color: #fef2f2;
   border: 1px solid #fecaca;
-  padding: 0.5rem 0.75rem;
+  padding: 0.55rem 0.8rem;
   border-radius: 6px;
 }
 
@@ -152,6 +231,93 @@ body {
   font-weight: 500;
 }
 
+.state-box {
+  margin-bottom: 0.85rem;
+}
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.skeleton-item {
+  padding: 0.95rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-line {
+  height: 12px;
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+.skeleton-line.title {
+  width: 55%;
+}
+
+.skeleton-line.meta {
+  width: 35%;
+  height: 10px;
+}
+
+.loading-caption {
+  font-size: 0.82rem;
+  color: #64748b;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.error-state-card {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 1.15rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.error-state-text {
+  font-size: 0.9rem;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+.btn-retry {
+  padding: 0.45rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #ffffff;
+  background-color: #dc2626;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-retry:hover {
+  background-color: #b91c1c;
+}
+
 .task-list {
   list-style: none;
   display: flex;
@@ -168,7 +334,7 @@ body {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background-color: #ffffff;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, opacity 0.15s ease;
 }
 
 .task-item:hover {
