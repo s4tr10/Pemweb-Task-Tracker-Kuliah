@@ -27,6 +27,18 @@ let tasks = [
   }
 ];
 
+// Menampilkan pesan error validasi di halaman
+function showError(message) {
+  errorMsg.textContent = message;
+  errorMsg.hidden = false;
+}
+
+// Menyembunyikan pesan error
+function clearError() {
+  errorMsg.textContent = '';
+  errorMsg.hidden = true;
+}
+
 // Satu fungsi render() untuk membangun tampilan dari state secara aman (textContent)
 function render() {
   // Hitung jumlah tugas yang masih aktif (belum selesai)
@@ -91,6 +103,56 @@ function render() {
     taskList.appendChild(li);
   });
 }
+
+// Handler submit form tambah tugas
+function handleFormSubmit(e) {
+  e.preventDefault();
+
+  const judul = inputJudul.value.trim();
+  const matkul = inputMatkul.value;
+  const deadline = inputDeadline.value;
+
+  // Validasi judul >= 3 karakter & deadline wajib diisi
+  if (judul.length < 3 && !deadline) {
+    showError('Judul tugas minimal 3 karakter dan deadline wajib diisi.');
+    return;
+  }
+
+  if (judul.length < 3) {
+    showError('Judul tugas minimal harus 3 karakter.');
+    inputJudul.focus();
+    return;
+  }
+
+  if (!deadline) {
+    showError('Deadline tugas wajib dipilih.');
+    inputDeadline.focus();
+    return;
+  }
+
+  clearError();
+
+  // Tambah tugas baru ke state array
+  const newTask = {
+    id: Date.now(),
+    judul: judul,
+    matkul: matkul,
+    deadline: deadline,
+    selesai: false
+  };
+
+  tasks.push(newTask);
+
+  // Reset form input dan render ulang
+  inputJudul.value = '';
+  inputDeadline.value = '';
+  inputJudul.focus();
+
+  render();
+}
+
+// Pasang listener pada event submit form
+taskForm.addEventListener('submit', handleFormSubmit);
 
 // Render tampilan awal
 render();
