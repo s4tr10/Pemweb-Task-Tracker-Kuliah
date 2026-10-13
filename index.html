@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Tracker Kuliah</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="container">
+    <header class="app-header">
+      <h1>📋 Task Tracker Kuliah</h1>
+    </header>
+
+    <form id="task-form" class="task-form" novalidate>
+      <div class="form-row">
+        <input
+          type="text"
+          id="input-judul"
+          class="input-control"
+          placeholder="Judul tugas (min. 3 karakter)"
+          autocomplete="off"
+        >
+      </div>
+
+      <div class="form-row form-inline">
+        <select id="input-matkul" class="input-control select-matkul">
+          <option value="Pemrograman Web">Pemrograman Web</option>
+          <option value="Basis Data">Basis Data</option>
+          <option value="Struktur Data">Struktur Data</option>
+          <option value="Jaringan Komputer">Jaringan Komputer</option>
+          <option value="Sistem Operasi">Sistem Operasi</option>
+          <option value="Rekayasa Perangkat Lunak">Rekayasa Perangkat Lunak</option>
+        </select>
+
+        <input
+          type="date"
+          id="input-deadline"
+          class="input-control input-date"
+        >
+
+        <button type="submit" class="btn-submit">Tambah</button>
+      </div>
+
+      <p id="error-msg" class="error-msg" hidden></p>
+    </form>
+
+    <div class="toolbar">
+      <div id="filter-group" class="filter-group">
+        <button type="button" class="filter-btn on" data-filter="semua">Semua</button>
+        <button type="button" class="filter-btn" data-filter="aktif">Aktif</button>
+        <button type="button" class="filter-btn" data-filter="selesai">Selesai</button>
+      </div>
+      <span id="task-counter" class="task-counter">0 tugas aktif</span>
+    </div>
+
+    <ul id="task-list" class="task-list"></ul>
+    <p id="empty-msg" class="empty-msg" hidden>Tidak ada tugas untuk ditampilkan.</p>
+  </main>
+</body>
+</html>
