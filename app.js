@@ -296,6 +296,51 @@ async function handleFormSubmit(e) {
   }
 }
 
+// 03 Selesai & hapus lewat event delegation: PATCH /api/tugas/:id dan DELETE /api/tugas/:id (204)
+async function handleListClick(e) {
+  const itemEl = e.target.closest('.task-item');
+  if (!itemEl) return;
+
+  const taskId = Number(itemEl.dataset.id);
+  clearError();
+
+  // Jika tombol hapus diklik -> DELETE /api/tugas/:id (204)
+  if (e.target.closest('.btn-delete')) {
+    try {
+      await api(`/api/tugas/${taskId}`, {
+        method: 'DELETE'
+      });
+      tasks = tasks.filter((task) => task.id !== taskId);
+      render();
+    } catch (err) {
+      showError(err.message || 'Gagal menghapus tugas dari server.');
+    }
+    return;
+  }
+
+  // Jika checkbox selesai diklik -> PATCH /api/tugas/:id
+  if (e.target.closest('.task-checkbox')) {
+    const targetTask = tasks.find((task) => task.id === taskId);
+    if (!targetTask) return;
+
+    try {
+      const updatedTask = await api(`/api/tugas/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ selesai: !targetTask.selesai })
+      });
+
+      tasks = tasks.map((task) => (task.id === taskId ? updatedTask : task));
+      render();
+    } catch (err) {
+      showError(err.message || 'Gagal memperbarui status tugas.');
+      render();
+    }
+  }
+}
+
 // Handler filter tugas (Semua / Aktif / Selesai)
 function handleFilterClick(e) {
   const btn = e.target.closest('.filter-btn');
@@ -306,6 +351,7 @@ function handleFilterClick(e) {
 }
 
 taskForm.addEventListener('submit', handleFormSubmit);
+taskList.addEventListener('click', handleListClick);
 filterGroup.addEventListener('click', handleFilterClick);
 btnReload.addEventListener('click', loadInitialData);
 
