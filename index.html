@@ -3,14 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Task Tracker Kuliah</title>
+  <title>Task Tracker Kuliah v2 · REST API</title>
   <link rel="stylesheet" href="style.css">
+  <script src="mock-api.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
   <main class="container">
     <header class="app-header">
-      <h1>📋 Task Tracker Kuliah</h1>
+      <div class="header-title">
+        <h1>📋 Task Tracker Kuliah <span class="badge-version">v2 · REST API</span></h1>
+      </div>
+      <div class="network-bar">
+        <label for="network-mode" class="sr-only">Mode Jaringan</label>
+        <select id="network-mode" class="network-select" title="Simulasi Kondisi Jaringan">
+          <option value="normal">Normal</option>
+          <option value="lambat">Lambat</option>
+          <option value="offline">Offline</option>
+        </select>
+        <button type="button" id="btn-reload" class="btn-reload" title="Muat ulang dari server">↻</button>
+      </div>
     </header>
 
     <form id="task-form" class="task-form" novalidate>
@@ -26,12 +38,7 @@
 
       <div class="form-row form-inline">
         <select id="input-matkul" class="input-control select-matkul">
-          <option value="Pemrograman Web">Pemrograman Web</option>
-          <option value="Basis Data">Basis Data</option>
-          <option value="Struktur Data">Struktur Data</option>
-          <option value="Jaringan Komputer">Jaringan Komputer</option>
-          <option value="Sistem Operasi">Sistem Operasi</option>
-          <option value="Rekayasa Perangkat Lunak">Rekayasa Perangkat Lunak</option>
+          <option value="">Memuat mata kuliah...</option>
         </select>
 
         <input
@@ -40,11 +47,21 @@
           class="input-control input-date"
         >
 
-        <button type="submit" class="btn-submit">Tambah</button>
+        <button type="submit" id="btn-submit" class="btn-submit">Tambah</button>
       </div>
 
       <p id="error-msg" class="error-msg" hidden></p>
     </form>
+
+    <div class="search-row">
+      <input
+        type="search"
+        id="input-search"
+        class="input-control input-search"
+        placeholder="Cari judul tugas atau mata kuliah..."
+        autocomplete="off"
+      >
+    </div>
 
     <div class="toolbar">
       <div id="filter-group" class="filter-group">
@@ -55,6 +72,7 @@
       <span id="task-counter" class="task-counter">0 tugas aktif</span>
     </div>
 
+    <div id="state-box" class="state-box" hidden></div>
     <ul id="task-list" class="task-list"></ul>
     <p id="empty-msg" class="empty-msg" hidden>Tidak ada tugas untuk ditampilkan.</p>
   </main>
