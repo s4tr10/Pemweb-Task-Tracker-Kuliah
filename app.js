@@ -151,8 +151,33 @@ function handleFormSubmit(e) {
   render();
 }
 
-// Pasang listener pada event submit form
+// Handler event delegation pada elemen <ul> untuk checkbox selesai & tombol hapus
+function handleListClick(e) {
+  const itemEl = e.target.closest('.task-item');
+  if (!itemEl) return;
+
+  const taskId = Number(itemEl.dataset.id);
+
+  // Jika yang diklik adalah tombol hapus
+  if (e.target.closest('.btn-delete')) {
+    tasks = tasks.filter((task) => task.id !== taskId);
+    render();
+    return;
+  }
+
+  // Jika yang diklik adalah checkbox selesai
+  if (e.target.closest('.task-checkbox')) {
+    const targetTask = tasks.find((task) => task.id === taskId);
+    if (targetTask) {
+      targetTask.selesai = !targetTask.selesai;
+      render();
+    }
+  }
+}
+
+// Pasang event listener
 taskForm.addEventListener('submit', handleFormSubmit);
+taskList.addEventListener('click', handleListClick);
 
 // Render tampilan awal
 render();
