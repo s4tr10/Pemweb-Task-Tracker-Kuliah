@@ -4,6 +4,7 @@ const inputJudul = document.querySelector('#input-judul');
 const inputMatkul = document.querySelector('#input-matkul');
 const inputDeadline = document.querySelector('#input-deadline');
 const btnSubmit = document.querySelector('#btn-submit');
+const inputSearch = document.querySelector('#input-search');
 const errorMsg = document.querySelector('#error-msg');
 const filterGroup = document.querySelector('#filter-group');
 const filterButtons = document.querySelectorAll('.filter-btn');
@@ -16,12 +17,31 @@ const btnReload = document.querySelector('#btn-reload');
 
 // State aplikasi
 let tasks = [];
-let matkulList = [];
+let matkulList = [
+  'Pemrograman Web',
+  'Basis Data',
+  'Struktur Data',
+  'Jaringan Komputer',
+  'Sistem Operasi',
+  'Rekayasa Perangkat Lunak'
+];
 let currentFilter = 'semua';
+let searchQuery = '';
 let isLoading = false;
 let loadError = null;
 
-// Menampilkan pesan error di halaman
+// Utility Debounce untuk fitur pencarian (Bonus)
+function debounce(fn, delay = 250) {
+  let timerId = null;
+  return function (...args) {
+    clearTimeout(timerId);
+    timerId = setTimeout(() => {
+      fn.apply(this, args);
+    }, delay);
+  };
+}
+
+// Menampilkan pesan error di halaman (tanpa error merah tak tertangani di Console)
 function showError(message) {
   errorMsg.textContent = message;
   errorMsg.hidden = false;
@@ -35,7 +55,12 @@ function clearError() {
 
 // 04 Helper api() yang mengecek res.ok dan melempar Error berisi pesan server
 async function api(url, options = {}) {
-  const response = await fetch(url, options);
+  let response;
+  try {
+    response = await fetch(url, options);
+  } catch (networkErr) {
+    throw new Error(networkErr.message || 'Gagal terhubung ke server. Periksa koneksi jaringan.');
+  }
 
   if (!response.ok) {
     let serverMessage = `Gagal memproses permintaan (HTTP ${response.status}).`;
@@ -131,11 +156,12 @@ function renderErrorState(message) {
   stateBox.appendChild(card);
 }
 
-// 01 & 05 Muat dari server secara paralel dengan state loading, error + coba lagi, dan kosong
+// 01 & 05 Muat dari server secara paralel dengan Promise.all (GET /api/tugas & GET /api/matkul)
 async function loadInitialData() {
   isLoading = true;
   loadError = null;
   clearError();
+  renderMatkulOptions();
   render();
 
   try {
@@ -145,7 +171,9 @@ async function loadInitialData() {
     ]);
 
     tasks = Array.isArray(fetchedTasks) ? fetchedTasks : [];
-    matkulList = Array.isArray(fetchedMatkul) ? fetchedMatkul : [];
+    if (Array.isArray(fetchedMatkul) && fetchedMatkul.length > 0) {
+      matkulList = fetchedMatkul;
+    }
 
     renderMatkulOptions();
   } catch (err) {
@@ -184,21 +212,34 @@ function render() {
   stateBox.hidden = true;
   stateBox.textContent = '';
 
-  // 3. Filter & urutkan daftar tugas
+  // 3. Filter status & pencarian kata kunci (debounce)
   const filteredTasks = tasks.filter((task) => {
-    if (currentFilter === 'aktif') return !task.selesai;
-    if (currentFilter === 'selesai') return task.selesai;
-    return true;
+    const matchStatus =
+      currentFilter === 'aktif'
+        ? !task.selesai
+        : currentFilter === 'selesai'
+          ? task.selesai
+          : true;
+
+    const matchSearch =
+      !searchQuery ||
+      task.judul.toLowerCase().includes(searchQuery) ||
+      task.matkul.toLowerCase().includes(searchQuery);
+
+    return matchStatus && matchSearch;
   });
 
+  // 4. Urutkan berdasarkan deadline terdekat
   const sortedTasks = [...filteredTasks].sort((a, b) =>
     a.deadline.localeCompare(b.deadline)
   );
 
-  // 4. State Kosong
+  // 5. State Kosong
   if (sortedTasks.length === 0) {
     if (tasks.length === 0) {
       emptyMsg.textContent = 'Belum ada daftar tugas di server. Yuk tambahkan tugas baru!';
+    } else if (searchQuery) {
+      emptyMsg.textContent = `Tidak ditemukan tugas yang cocok dengan "${searchQuery}".`;
     } else if (currentFilter === 'aktif') {
       emptyMsg.textContent = 'Tidak ada tugas aktif saat ini.';
     } else {
@@ -210,7 +251,7 @@ function render() {
 
   emptyMsg.hidden = true;
 
-  // 5. Render daftar tugas dengan textContent
+  // 6. Render daftar tugas secara aman dengan textContent
   sortedTasks.forEach((task) => {
     const li = document.createElement('li');
     li.className = 'task-item';
@@ -296,7 +337,7 @@ async function handleFormSubmit(e) {
   }
 }
 
-// 03 Selesai & hapus lewat event delegation: PATCH /api/tugas/:id dan DELETE /api/tugas/:id (204)
+// 03 & Bonus: Selesai (PATCH) & Hapus (DELETE 204) lewat event delegation + Optimistic Update (rollback jika gagal)
 async function handleListClick(e) {
   const itemEl = e.target.closest('.task-item');
   if (!itemEl) return;
@@ -304,24 +345,40 @@ async function handleListClick(e) {
   const taskId = Number(itemEl.dataset.id);
   clearError();
 
-  // Jika tombol hapus diklik -> DELETE /api/tugas/:id (204)
+  // Aksi Hapus -> DELETE /api/tugas/:id (204) dengan Optimistic Update
   if (e.target.closest('.btn-delete')) {
+    const snapshot = tasks.map((t) => ({ ...t }));
+
+    // Optimistic update: hapus dari tampilan lebih dulu
+    tasks = tasks.filter((task) => task.id !== taskId);
+    render();
+
     try {
       await api(`/api/tugas/${taskId}`, {
         method: 'DELETE'
       });
-      tasks = tasks.filter((task) => task.id !== taskId);
-      render();
     } catch (err) {
-      showError(err.message || 'Gagal menghapus tugas dari server.');
+      // Rollback jika server gagal (misal mode offline)
+      tasks = snapshot;
+      render();
+      showError(`Gagal menghapus tugas (perubahan dibatalkan): ${err.message}`);
     }
     return;
   }
 
-  // Jika checkbox selesai diklik -> PATCH /api/tugas/:id
+  // Aksi Toggle Selesai -> PATCH /api/tugas/:id dengan Optimistic Update
   if (e.target.closest('.task-checkbox')) {
     const targetTask = tasks.find((task) => task.id === taskId);
     if (!targetTask) return;
+
+    const snapshot = tasks.map((t) => ({ ...t }));
+    const nextStatus = !targetTask.selesai;
+
+    // Optimistic update: ubah tampilan lebih dulu
+    tasks = tasks.map((task) =>
+      task.id === taskId ? { ...task, selesai: nextStatus } : task
+    );
+    render();
 
     try {
       const updatedTask = await api(`/api/tugas/${taskId}`, {
@@ -329,14 +386,17 @@ async function handleListClick(e) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ selesai: !targetTask.selesai })
+        body: JSON.stringify({ selesai: nextStatus })
       });
 
+      // Sinkronkan state dari respons server lalu render()
       tasks = tasks.map((task) => (task.id === taskId ? updatedTask : task));
       render();
     } catch (err) {
-      showError(err.message || 'Gagal memperbarui status tugas.');
+      // Rollback jika server gagal (misal mode offline)
+      tasks = snapshot;
       render();
+      showError(`Gagal memperbarui status tugas (perubahan dibatalkan): ${err.message}`);
     }
   }
 }
@@ -350,10 +410,38 @@ function handleFilterClick(e) {
   render();
 }
 
+// Handler pencarian dengan debounce (Bonus)
+const handleSearchInput = debounce((e) => {
+  searchQuery = e.target.value.trim().toLowerCase();
+  render();
+}, 250);
+
+// Sinkronisasi dropdown mode jaringan dengan window.__API
+function handleNetworkModeChange(e) {
+  if (window.__API && typeof window.__API.setMode === 'function') {
+    window.__API.setMode(e.target.value);
+  }
+}
+
+window.addEventListener('api-mode-change', (e) => {
+  if (e.detail && e.detail.mode && networkModeSelect) {
+    networkModeSelect.value = e.detail.mode;
+  }
+});
+
+// Pasang seluruh event listener
 taskForm.addEventListener('submit', handleFormSubmit);
 taskList.addEventListener('click', handleListClick);
 filterGroup.addEventListener('click', handleFilterClick);
-btnReload.addEventListener('click', loadInitialData);
+if (inputSearch) {
+  inputSearch.addEventListener('input', handleSearchInput);
+}
+if (networkModeSelect) {
+  networkModeSelect.addEventListener('change', handleNetworkModeChange);
+}
+if (btnReload) {
+  btnReload.addEventListener('click', loadInitialData);
+}
 
 // Muat data dari server saat halaman dibuka
 loadInitialData();
