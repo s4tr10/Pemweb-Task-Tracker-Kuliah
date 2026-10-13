@@ -5,12 +5,16 @@ const inputMatkul = document.querySelector('#input-matkul');
 const inputDeadline = document.querySelector('#input-deadline');
 const errorMsg = document.querySelector('#error-msg');
 const filterGroup = document.querySelector('#filter-group');
+const filterButtons = document.querySelectorAll('.filter-btn');
 const taskCounter = document.querySelector('#task-counter');
 const taskList = document.querySelector('#task-list');
 const emptyMsg = document.querySelector('#empty-msg');
 
-// State aplikasi: array of objects { id, judul, matkul, deadline, selesai }
-let tasks = [
+// Kunci penyimpanan localStorage
+const STORAGE_KEY = 'task_tracker_kuliah_data';
+
+// Data awal default jika localStorage masih kosong
+const defaultTasks = [
   {
     id: 1,
     judul: 'Lab 10 event delegation',
@@ -27,6 +31,35 @@ let tasks = [
   }
 ];
 
+// Memuat data dari localStorage
+function loadTasks() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('Gagal membaca localStorage:', err);
+  }
+  return [...defaultTasks];
+}
+
+// Menyimpan data ke localStorage
+function saveTasks() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  } catch (err) {
+    console.error('Gagal menyimpan ke localStorage:', err);
+  }
+}
+
+// State aplikasi: array of objects { id, judul, matkul, deadline, selesai }
+let tasks = loadTasks();
+let currentFilter = 'semua';
+
 // Menampilkan pesan error validasi di halaman
 function showError(message) {
   errorMsg.textContent = message;
@@ -39,25 +72,49 @@ function clearError() {
   errorMsg.hidden = true;
 }
 
-// Satu fungsi render() untuk membangun tampilan dari state secara aman (textContent)
+// Satu fungsi render() untuk membangun seluruh tampilan dari state secara aman (textContent)
 function render() {
-  // Hitung jumlah tugas yang masih aktif (belum selesai)
+  // 1. Update counter tugas aktif
   const activeCount = tasks.filter((task) => !task.selesai).length;
   taskCounter.textContent = `${activeCount} tugas aktif`;
 
-  // Bersihkan isi daftar sebelum merender ulang
+  // 2. Update class 'on' pada tombol filter yang sedang aktif
+  filterButtons.forEach((btn) => {
+    btn.classList.toggle('on', btn.dataset.filter === currentFilter);
+  });
+
+  // 3. Filter daftar tugas sesuai kategori aktif
+  const filteredTasks = tasks.filter((task) => {
+    if (currentFilter === 'aktif') return !task.selesai;
+    if (currentFilter === 'selesai') return task.selesai;
+    return true;
+  });
+
+  // 4. Bonus: Urutkan berdasarkan deadline terdekat (ascending)
+  const sortedTasks = [...filteredTasks].sort((a, b) =>
+    a.deadline.localeCompare(b.deadline)
+  );
+
+  // 5. Bersihkan isi daftar sebelum merender ulang
   taskList.textContent = '';
 
-  // Tampilkan pesan kosong jika belum ada tugas
-  if (tasks.length === 0) {
+  // 6. Tampilkan pesan kosong jika hasil filter tidak memiliki item
+  if (sortedTasks.length === 0) {
+    if (tasks.length === 0) {
+      emptyMsg.textContent = 'Belum ada daftar tugas. Yuk tambahkan tugas kuliahmu!';
+    } else if (currentFilter === 'aktif') {
+      emptyMsg.textContent = 'Tidak ada tugas aktif. Semua tugas sudah selesai!';
+    } else {
+      emptyMsg.textContent = 'Belum ada tugas yang diselesaikan.';
+    }
     emptyMsg.hidden = false;
     return;
   }
 
   emptyMsg.hidden = true;
 
-  // Bangun elemen setiap item tugas menggunakan DOM API & textContent
-  tasks.forEach((task) => {
+  // 7. Bangun elemen setiap item tugas menggunakan DOM API & textContent
+  sortedTasks.forEach((task) => {
     const li = document.createElement('li');
     li.className = 'task-item';
     if (task.selesai) {
@@ -142,6 +199,7 @@ function handleFormSubmit(e) {
   };
 
   tasks.push(newTask);
+  saveTasks();
 
   // Reset form input dan render ulang
   inputJudul.value = '';
@@ -161,6 +219,7 @@ function handleListClick(e) {
   // Jika yang diklik adalah tombol hapus
   if (e.target.closest('.btn-delete')) {
     tasks = tasks.filter((task) => task.id !== taskId);
+    saveTasks();
     render();
     return;
   }
@@ -170,14 +229,25 @@ function handleListClick(e) {
     const targetTask = tasks.find((task) => task.id === taskId);
     if (targetTask) {
       targetTask.selesai = !targetTask.selesai;
+      saveTasks();
       render();
     }
   }
 }
 
+// Handler filter tugas (Semua / Aktif / Selesai) dengan event delegation
+function handleFilterClick(e) {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+
+  currentFilter = btn.dataset.filter;
+  render();
+}
+
 // Pasang event listener
 taskForm.addEventListener('submit', handleFormSubmit);
 taskList.addEventListener('click', handleListClick);
+filterGroup.addEventListener('click', handleFilterClick);
 
 // Render tampilan awal
 render();
