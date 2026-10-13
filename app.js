@@ -21,6 +21,18 @@ let currentFilter = 'semua';
 let isLoading = false;
 let loadError = null;
 
+// Menampilkan pesan error di halaman
+function showError(message) {
+  errorMsg.textContent = message;
+  errorMsg.hidden = false;
+}
+
+// Menyembunyikan pesan error
+function clearError() {
+  errorMsg.textContent = '';
+  errorMsg.hidden = true;
+}
+
 // 04 Helper api() yang mengecek res.ok dan melempar Error berisi pesan server
 async function api(url, options = {}) {
   const response = await fetch(url, options);
@@ -123,6 +135,7 @@ function renderErrorState(message) {
 async function loadInitialData() {
   isLoading = true;
   loadError = null;
+  clearError();
   render();
 
   try {
@@ -245,6 +258,44 @@ function render() {
   });
 }
 
+// 02 Tambah: form -> POST /api/tugas (header & body JSON), tombol nonaktif selama mengirim, tampilkan error server (400)
+async function handleFormSubmit(e) {
+  e.preventDefault();
+  clearError();
+
+  const payload = {
+    judul: inputJudul.value.trim(),
+    matkul: inputMatkul.value,
+    deadline: inputDeadline.value
+  };
+
+  btnSubmit.disabled = true;
+  btnSubmit.textContent = 'Mengirim...';
+
+  try {
+    const createdTask = await api('/api/tugas', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    tasks.push(createdTask);
+
+    inputJudul.value = '';
+    inputDeadline.value = '';
+    inputJudul.focus();
+
+    render();
+  } catch (err) {
+    showError(err.message || 'Gagal menambahkan tugas ke server.');
+  } finally {
+    btnSubmit.disabled = false;
+    btnSubmit.textContent = 'Tambah';
+  }
+}
+
 // Handler filter tugas (Semua / Aktif / Selesai)
 function handleFilterClick(e) {
   const btn = e.target.closest('.filter-btn');
@@ -254,6 +305,7 @@ function handleFilterClick(e) {
   render();
 }
 
+taskForm.addEventListener('submit', handleFormSubmit);
 filterGroup.addEventListener('click', handleFilterClick);
 btnReload.addEventListener('click', loadInitialData);
 
